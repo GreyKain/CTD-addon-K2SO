@@ -89,11 +89,15 @@ if mods["Smart_Inserters"] then
 end
 
 -- ##############################################################################################
--- Repair_Turret: привязка к технологии "Логистическая технологическая карта"
+-- Repair_Turret: привязка к технологиям технологических карт
 -- ##############################################################################################
 if mods["Repair_Turret"] then
     add_dependency("repair-turret", "logistic-science-pack")
     add_dependency("repair-turret", "steel-processing")
+    add_dependency("repair-turret-efficiency-2", "chemical-science-pack")
+    add_dependency("repair-turret-power-2", "chemical-science-pack")
+    add_dependency("repair-turret-efficiency-3", "utility-science-pack")
+    add_dependency("repair-turret-power-3", "utility-science-pack")
 end
 
 -- ##############################################################################################
@@ -151,7 +155,7 @@ end
 -- ##############################################################################################
 fluid["water"].heat_capacity = "2kJ" -- вода
 fluid["steam"].heat_capacity = "0.2kJ" -- пар
-
+-- TODO: добавить изменение потребления энергии и КПД для всех бойлеров, генераторов и насосов из мода BobPower
     -- КПД паровых движков
 generator["steam-engine"].effectivity = 0.7
 generator["steam-engine"].fluid_usage_per_tick = 0.5
@@ -180,7 +184,15 @@ if mods ["bobpower"] then
     boiler["bob-oil-boiler-2"].energy_source.effectivity = 0.82
     boiler["bob-oil-boiler-3"].energy_source.effectivity = 0.87
     boiler["bob-oil-boiler-4"].energy_source.effectivity = 0.92
--- TODO: добавить изменение потребления энергии и КПД для всех бойлеров, генераторов и насосов из мода BobPower
+end
+    -- КПД паровых турбин
+generator["steam-turbine"].effectivity = 0.82
+if mods ["bobpower"] then
+    generator["bob-steam-turbine-2"].effectivity = 0.88
+    generator["bob-steam-turbine-3"].effectivity = 0.92
+end
+    -- Выработка солнечных панелей
+if mods ["bobpower"] then
     solar["solar-panel"].production = "60kW"
 end
 
@@ -256,10 +268,19 @@ if mods ["reskins-bobs"] and mods ["boblogistics"] and mods ["black-rubber-belts
         "turbo-transport-belt",
         "bob-ultimate-transport-belt"
     }
-    for _, name in ipairs(recipes) do
-        if recipe[name] then
-            recipe[name].icon = nil
-            recipe[name].icons = nil
-        end
+    set_field_for(recipe, recipes, "icon", nil)
+    set_field_for(recipe, recipes, "icons", nil)
+end
+-- ##############################################################################################
+
+-- ##############################################################################################
+-- изменение рецептов резервуаров
+-- ##############################################################################################
+if mods["boblogistics"] then
+    if recipe["storage-tank"] then
+        recipe["storage-tank"].ingredients = {
+            {type = "item", name = "iron-plate", amount = 20},
+            {type = "item", name = "steel-plate", amount = 5}
+        }
     end
 end
