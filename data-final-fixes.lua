@@ -17,6 +17,7 @@ local shortcut = data.raw["shortcut"]
 local tech = data.raw["technology"]
 local solar = data.raw["solar-panel"]
 local fluid = data.raw["fluid"]
+local reactor = data.raw["reactor"]
 
 local add_dependency = CTD_mod.lib.tech.add_dependency
 local add_science_pack = CTD_mod.lib.tech.add_science_pack
@@ -102,8 +103,11 @@ end
 
 -- ##############################################################################################
 -- Добавление Логистической технологической карты к технологии "Химия жидкостей"
+-- Добавление Технологической карты продуктивности
+--                          к технологии "Увеличение грузоподъемности пакетного манипулятора 4"
 -- ##############################################################################################
 add_science_pack("kr-fluids-chemistry", "logistic-science-pack", 1)
+add_science_pack("inserter-capacity-bonus-4", "production-science-pack", 1)
 
 -- ##############################################################################################
 -- Удаление разблокировки Длинного манипулятора технологией "Логистика"
@@ -155,19 +159,11 @@ end
 -- ##############################################################################################
 fluid["water"].heat_capacity = "2kJ" -- вода
 fluid["steam"].heat_capacity = "0.2kJ" -- пар
--- TODO: добавить изменение потребления энергии и КПД для всех бойлеров, генераторов и насосов из мода BobPower
-    -- КПД паровых движков
-generator["steam-engine"].effectivity = 0.7
-generator["steam-engine"].fluid_usage_per_tick = 0.5
-generator["steam-engine"].max_power_output = nil
-if mods ["bobpower"] then
-    generator["bob-steam-engine-2"].effectivity = 0.75
-	generator["bob-steam-engine-3"].effectivity = 0.8
-	generator["bob-steam-engine-4"].effectivity = 0.85
-	generator["bob-steam-engine-5"].effectivity = 0.9
-end
+-- ##############################################################################################
 
-    -- КПД бойлеров
+-- TODO: добавить изменение потребления энергии и КПД для всех бойлеров, генераторов и насосов из мода BobPower
+-- !ИЗМЕНЕНИЕ ПАРАМЕТРОВ РАЗЛИЧНЫХ ЭНЕРГОУСТАНОВОК
+-- *БОЙЛЕРЫ
 boiler["boiler"].energy_source.effectivity = 0.7
 boiler["boiler"].energy_consumption = "1.8MW"
 boiler["boiler"].energy_source.emissions_per_minute = {pollution = 45}
@@ -180,36 +176,119 @@ if mods ["bobpower"] then
     boiler["bob-boiler-3"].energy_source.effectivity = 0.8
     boiler["bob-boiler-4"].energy_source.effectivity = 0.85
     boiler["bob-boiler-5"].energy_source.effectivity = 0.9
+-- *НЕФТЕЖИДКОСТНЫЕ БОЙЛЕРЫ
     boiler["bob-oil-boiler"].energy_source.effectivity = 0.77
     boiler["bob-oil-boiler-2"].energy_source.effectivity = 0.82
     boiler["bob-oil-boiler-3"].energy_source.effectivity = 0.87
     boiler["bob-oil-boiler-4"].energy_source.effectivity = 0.92
 end
-    -- КПД паровых турбин
+-- *ПАРОВЫЕ ДВИГАТЕЛИ
+generator["steam-engine"].effectivity = 0.7
+generator["steam-engine"].fluid_usage_per_tick = 0.5
+generator["steam-engine"].max_power_output = nil
+if mods ["bobpower"] then
+    generator["bob-steam-engine-2"].effectivity = 0.75
+	generator["bob-steam-engine-3"].effectivity = 0.8
+	generator["bob-steam-engine-4"].effectivity = 0.85
+	generator["bob-steam-engine-5"].effectivity = 0.9
+end
+-- *ПАРОВЫЕ ТУРБИНЫ
+generator["steam-turbine"].fluid_usage_per_tick = 1
+generator["steam-turbine"].max_power_output = nil
 generator["steam-turbine"].effectivity = 0.82
 if mods ["bobpower"] then
     generator["bob-steam-turbine-2"].effectivity = 0.88
     generator["bob-steam-turbine-3"].effectivity = 0.92
 end
-    -- Выработка солнечных панелей
+-- if generator["kr-advanced-steam-turbine"] then
+--     generator["kr-advanced-steam-turbine"].effectivity = 
+-- end
+-- *ТОПЛИВНЫЕ ГЕНЕРАТОРЫ
+if mods ["aai-industry"] then
+    --  Твердотопливная турбина-генератор
+    if burner_generator["burner-turbine"] then
+        burner_generator["burner-turbine"].burner.effectivity = 0.45
+        burner_generator["burner-turbine"].max_power_output = "800kW"
+    end
+    if mods ["bobpower"] then
+        if burner_generator["bob-burner-generator"] then
+            burner_generator["bob-burner-generator"].burner.effectivity = 0.45
+            if burner_generator["burner-turbine"] then
+                recipe["bob-burner-generator"].ingredients = table.deepcopy(recipe["burner-turbine"].ingredients)
+                recipe["bob-burner-generator"].enabled = false
+                remove_unlock_recipe("electricity", "burner-turbine")
+                recipe["burner-turbine"].hidden = true
+                recipe["burner-turbine"].hidden_in_factoriopedia = true
+                item["burner-turbine"].hidden_in_factoriopedia = true
+                burner_generator["burner-turbine"].hidden_in_factoriopedia = true
+                if recipe["bob-burner-generator"] then
+                    tech["electricity"].effects = tech["electricity"].effects or {}
+                    local already_unlocked = false
+                    for _, effect in pairs(tech["electricity"].effects) do
+                        if effect.type == "unlock-recipe" and effect.recipe == "bob-burner-generator" then
+                            already_unlocked = true
+                            break
+                        end
+                    end
+                    if not already_unlocked then
+                        table.insert(tech["electricity"].effects, {
+                            type = "unlock-recipe",
+                            recipe = "bob-burner-generator"
+                        })
+                    end
+                end
+            end
+        end
+    end
+end
+-- *НЕФТЕЖИДКОСТНЫЕ ГЕНЕРАТОРЫ
+if mods ["bobpower"] then
+    -- generator["bob-fluid-generator"].effectivity =
+    -- generator["bob-fluid-generator-2"].effectivity =
+    -- generator["bob-fluid-generator-3"].effectivity =
+end
+-- *СОЛНЕЧНЫЕ ПАНЕЛИ
 if mods ["bobpower"] then
     solar["solar-panel"].production = "60kW"
 end
-
-if mods ["aai-industry"] then
-    --  КПД Твердотопливной турбины-генератора
-    burner_generator["burner-turbine"].burner.effectivity = 0.45
-    burner_generator["burner-turbine"].max_power_output = "800kW"
-
-    pump["offshore-pump"].energy_usage = "60kW"
-    pump["offshore-pump"].pumping_speed = 2	-- 120л/сек
-
-    assembler["burner-assembling-machine"].energy_source.effectivity = 0.45
-    assembler["burner-assembling-machine"].crafting_speed = 0.25
+-- *ТОПЛИВНЫЕ ИСТОЧНИКИ ТЕПЛА
+if mods ["bobpower"] then
+    reactor["bob-burner-reactor"].neighbour_bonus = 75/4/100        -- 75% от 4х соседей (100% default)
+    -- reactor["bob-burner-reactor"].energy_source.effectivity = 0.75
+    -- reactor["bob-burner-reactor-2"].neighbour_bonus = 75/4/100   -- 75% от 4х соседей (100% default)   
+    -- reactor["bob-burner-reactor-2"].energy_source.effectivity = 0.85
+-- *ЖИДКОТОПЛИВНЫЕ ИСТОЧНИКИ ТЕПЛА
+    -- reactor["bob-fluid-reactor"].neighbour_bonus = 0.1           -- 40% default
+    -- reactor["bob-fluid-reactor-2"].neighbour_bonus = 0.1         -- 40% default
+end
+-- *ТЕПЛООБМЕННИКИ
+boiler["heat-exchanger"].energy_consumption = "9.6MW"
+-- *ГАЗОВАЯ ЭЛЕКТРОСТАНЦИЯ
+if generator["kr-gas-power-station"] then
+    -- generator["kr-gas-power-station"].effectivity = 0
 end
 
-lab["burner-lab"].energy_source.effectivity = 0.45
-lab["burner-lab"].researching_speed = 0.5
+
+if mods ["aai-industry"] then
+    if pump["offshore-pump"] then
+        pump["offshore-pump"].energy_usage = "60kW"
+        pump["offshore-pump"].pumping_speed = 2	-- 120л/сек
+    end
+
+    if assembler["burner-assembling-machine"] then
+        assembler["burner-assembling-machine"].energy_source.effectivity = 0.45
+        assembler["burner-assembling-machine"].crafting_speed = 0.25
+    end
+    if lab["burner-lab"] then
+        lab["burner-lab"].energy_source.effectivity = 0.45
+        lab["burner-lab"].researching_speed = 0.5
+    end
+end
+
+
+
+
+
 
 -- ##############################################################################################
 -- Возврат стандартной теплотворности углю и древесине
@@ -233,8 +312,7 @@ item["wood"].fuel_value = "2MJ"
 -- ##############################################################################################
 
 -- ##############################################################################################
--- reactor["burner-reactor"].energy_source.effectivity = 0.75
--- reactor["burner-reactor-2"].energy_source.effectivity = 0.85
+
 
 -- reactor["fluid-reactor"].energy_source.effectivity = 0.8
 -- reactor["fluid-reactor-2"].energy_source.effectivity = 0.9
